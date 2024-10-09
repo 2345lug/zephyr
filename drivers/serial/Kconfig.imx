@@ -9,11 +9,8 @@ config UART_IMX
 	depends on DT_HAS_NXP_IMX_UART_ENABLED
 	select SERIAL_HAS_DRIVER
 	select SERIAL_SUPPORT_INTERRUPT
-<<<<<<< HEAD
-=======
 	select SERIAL_SUPPORT_RS485
 	depends on HAS_IMX_HAL
->>>>>>> 2f1dcbfa599 (uart: modify uart_imx driver to support RS485 API)
 	help
 	  This option enables the UART driver for NXP i.MX7
 	  family processors.
