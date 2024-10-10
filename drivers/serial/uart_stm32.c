@@ -66,9 +66,6 @@ LOG_MODULE_REGISTER(uart_stm32, CONFIG_UART_LOG_LEVEL);
 #define HAS_DRIVER_ENABLE 0
 #endif
 
-#if HAS_DRIVER_ENABLE == 0
-
-
 #ifdef CONFIG_PM
 /* Placeholder value when wakeup-line DT property is not defined */
 #define STM32_WAKEUP_LINE_NONE	0xFFFFFFFF
@@ -2489,6 +2486,7 @@ static const struct uart_stm32_config uart_stm32_cfg_##index = {	\
 	.de_assert_time = DT_INST_PROP(index, rs485_assertion_time_de_ns),		\
 	.de_deassert_time = DT_INST_PROP(index, rs485_deassertion_time_de_ns),	\
 	.de_invert = DT_INST_PROP(index, rs485_de_active_low),			\
+	.de_pin = = GPIO_DT_SPEC_INST_GET(i, de_pin), 
 	.fifo_enable = DT_INST_PROP(index, fifo_enable),		\
 	STM32_UART_IRQ_HANDLER_FUNC(index)				\
 	STM32_UART_PM_WAKEUP(index)					\
