@@ -66,6 +66,9 @@ LOG_MODULE_REGISTER(uart_stm32, CONFIG_UART_LOG_LEVEL);
 #define HAS_DRIVER_ENABLE 0
 #endif
 
+#if HAS_DRIVER_ENABLE == 0
+
+
 #ifdef CONFIG_PM
 /* Placeholder value when wakeup-line DT property is not defined */
 #define STM32_WAKEUP_LINE_NONE	0xFFFFFFFF
@@ -98,6 +101,25 @@ uint32_t lpuartdiv_calc(const uint64_t clock_rate, const uint32_t baud_rate)
 }
 #endif /* USART_PRESC_PRESCALER */
 #endif /* HAS_LPUART */
+
+#if CONFIG_SERIAL_SUPPORT_RS485
+static void rs485_de_pin_set(uart_stm32_config* config)
+{
+	gpio_pin_set(config->de_pin.port, config->de_pin.pin, config->de_invert);
+}
+
+static void rs485_de_pin_reset(uart_stm32_config* config)
+{
+	gpio_pin_set(config->de_pin.port, config->de_pin.pin, !config->de_invert);
+}
+
+static void rs485_de_time_expire_callback(struct k_timer *timer)
+{
+	struct uart_stm32_config* config = k_timer_user_data_get(timer);
+	struct gpio_dt_spec* de_pin = config.de_pin; 
+	rs485_de_pin_set(config);
+}
+#endif
 
 #ifdef CONFIG_PM
 static void uart_stm32_pm_policy_state_lock_get(const struct device *dev)
@@ -961,6 +983,11 @@ static void uart_stm32_irq_tx_enable(const struct device *dev)
 	unsigned int key;
 #endif
 
+	if (config->rs485_enabled) 
+	{
+		rs485_de_enable_pin_set(config);
+	} 
+
 #ifdef CONFIG_PM
 	key = irq_lock();
 	data->tx_poll_stream_on = false;
@@ -994,6 +1021,19 @@ static void uart_stm32_irq_tx_disable(const struct device *dev)
 #ifdef CONFIG_PM
 	irq_unlock(key);
 #endif
+	if (config->rs485_enabled) 
+	{
+		
+		if (config->rs485_de_timeout) 
+		{
+			k_timer_start(&data->rs485_timer, K_NSEC(config->de_assert_time), K_NO_WAIT);
+		}
+		else
+		{
+			rs485_de_enable_pin_reset(config);
+		}
+	} 
+
 }
 
 static int uart_stm32_irq_tx_ready(const struct device *dev)
@@ -2134,6 +2174,14 @@ static int uart_stm32_init(const struct device *dev)
 #else
 	return 0;
 #endif
+#ifdef	CONFIG_SERIAL_SUPPORT_RS485	//Init timer and pin
+	if (config->de_enabled) {
+		gpio_pin_configure_dt(&config->de_pin, GPIO_ACTIVE_LOW | GPIO_OUTPUT_ACTIVE);
+		gpio_pin_set(config->de_pin.port, config->de_pin.pin, config->de_invert);
+		k_timer_init(&data->rs485_timer, rs485_de_time_expire_callback, NULL);
+		k_timer_user_data_set(&data->rs485_timer, &config->de_pin);
+	}
+#endif
 }
 
 #ifdef CONFIG_PM_DEVICE
@@ -2437,10 +2485,10 @@ static const struct uart_stm32_config uart_stm32_cfg_##index = {	\
 	.tx_rx_swap = DT_INST_PROP(index, tx_rx_swap),			\
 	.rx_invert = DT_INST_PROP(index, rx_invert),			\
 	.tx_invert = DT_INST_PROP(index, tx_invert),			\
-	.de_enable = DT_INST_PROP(index, de_enable),			\
-	.de_assert_time = DT_INST_PROP(index, de_assert_time),		\
-	.de_deassert_time = DT_INST_PROP(index, de_deassert_time),	\
-	.de_invert = DT_INST_PROP(index, de_invert),			\
+	.de_enable = DT_INST_PROP(index, rs485_enabled),			\
+	.de_assert_time = DT_INST_PROP(index, rs485_assertion_time_de_ns),		\
+	.de_deassert_time = DT_INST_PROP(index, rs485_deassertion_time_de_ns),	\
+	.de_invert = DT_INST_PROP(index, rs485_de_active_low),			\
 	.fifo_enable = DT_INST_PROP(index, fifo_enable),		\
 	STM32_UART_IRQ_HANDLER_FUNC(index)				\
 	STM32_UART_PM_WAKEUP(index)					\

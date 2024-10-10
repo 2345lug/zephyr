@@ -7,6 +7,10 @@ properties:
       type: boolean
       required: false
       description: Enable rs485 mode
+    rs485-de-pin:
+      type: phandle-array
+      required: true
+      description: Output for contactor and relay 1
     rs485-full-duplex-mode:
       type: boolean
       required: false

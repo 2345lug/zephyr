@@ -440,7 +440,6 @@ __subsystem struct uart_driver_api {
 	void (*irq_callback_set)(const struct device *dev,
 				 uart_irq_callback_user_data_t cb,
 				 void *user_data);
-
 #endif
 
 #ifdef CONFIG_UART_LINE_CTRL
