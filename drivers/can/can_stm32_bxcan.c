@@ -120,7 +120,7 @@ static inline void can_stm32_rx_isr_handler(const struct device *dev)
 	struct can_frame frame;
 	can_rx_callback_t callback = NULL;
 	void *cb_arg;
-	int frst = 1; // Silna silna strashna, for test only
+	volatile int frst = 1;
 
 	while ((can->RF0R & CAN_RF0R_FMP0) || frst) {
 		mbox = &can->sFIFOMailBox[0];
