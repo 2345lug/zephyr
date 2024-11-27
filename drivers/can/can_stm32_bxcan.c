@@ -122,11 +122,9 @@ static inline void can_stm32_rx_isr_handler(const struct device *dev)
 	void *cb_arg;
 	volatile int frst = 1;
 
-	while ((can->RF0R & CAN_RF0R_FMP0) || frst) {
+	if ((can->RF0R & CAN_RF0R_FMP0)) {
 		mbox = &can->sFIFOMailBox[0];
 		filter_id = ((mbox->RDTR & CAN_RDT0R_FMI) >> CAN_RDT0R_FMI_Pos);
-		frst = 0;
-
 		LOG_DBG("Message on filter_id %d", filter_id);
 
 		can_stm32_rx_fifo_pop(mbox, &frame);
